@@ -54,6 +54,73 @@
     border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; font-size: 13px;
   }
   .feedback-submit-btn:hover { background: #e5e5e5; }
+
+  /* Thinking Animation Loader Layout */
+  .thinking-loader {
+    display: inline-flex;
+    gap: 6px;
+    padding: 14px 18px;
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 12px;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    margin-top: 4px;
+    animation: fadeInLoader 0.3s ease-out forwards;
+  }
+  .thinking-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #888;
+    border-radius: 50%;
+    animation: thinkingPulse 1.4s infinite ease-in-out both;
+  }
+  .thinking-dot:nth-child(1) { animation-delay: -0.32s; }
+  .thinking-dot:nth-child(2) { animation-delay: -0.16s; }
+  
+  @keyframes thinkingPulse {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+    40% { transform: scale(1.1); opacity: 1; background-color: #fff; }
+  }
+  @keyframes fadeInLoader {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Universal Code Download Component Wrapper */
+  pre {
+    position: relative;
+    padding-bottom: 42px !important;
+  }
+  .download-code-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    background: #1f1f1f;
+    border: 1px solid #333;
+    color: #eaeaea;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10;
+  }
+  .download-code-btn:hover {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+    transform: translateY(-1px);
+  }
+  .download-code-btn:active {
+    transform: translateY(0);
+  }
 </style>
 </head>
 <body>
@@ -528,7 +595,51 @@
     document.getElementById('filePreviewTray').innerHTML = '';
     currentlyAttachedFiles = [];
 
-    executeModelStreamRequest(session, null, isFirstTurn);
+    // Intercept checking for website creation phrases
+    const websiteKeywords = [/make a website/i, /create a website/i, /build a website/i, /generate a website/i, /design a website/i];
+    const matchIntercept = websiteKeywords.some(pattern => pattern.test(promptText));
+
+    if (matchIntercept) {
+      executeLocalInterceptResponse(session, isFirstTurn);
+    } else {
+      executeModelStreamRequest(session, null, isFirstTurn);
+    }
+  }
+
+  // Intercepting routine for dedicated app redirect
+  async function executeLocalInterceptResponse(session, triggerTitleGen = false) {
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+
+    const aiMessageContentBox = appendMessageElement("", 'ai', true);
+    aiMessageContentBox.innerHTML = `
+      <div class="thinking-loader">
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+      </div>
+    `;
+
+    // Simulate search thinking delay
+    await new Promise(resolve => setTimeout(resolve, 1400));
+
+    const alternativeLinkMsg = "A better way to create a website with Scribble is to go to the actual website generator! Please navigate to our standalone application at [../app](../app) to generate complete production layouts.";
+    aiMessageContentBox.innerHTML = marked.parse(alternativeLinkMsg);
+    
+    session.messages.push({ role: 'assistant', sender: 'ai', content: alternativeLinkMsg, rating: null });
+    session.updatedAt = Date.now();
+
+    appendEvaluationButtons(aiMessageContentBox.parentElement, session.messages.length - 1);
+    injectCodeDownloadButtons(aiMessageContentBox);
+    localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+
+    if (triggerTitleGen) {
+      if (chatSessions[activeChatId]) {
+        chatSessions[activeChatId].title = "Website Setup Link";
+        renderSidebarItemsOnly();
+      }
+    }
+    sendBtn.disabled = false;
   }
 
   async function executeModelStreamRequest(session, rewriteMessageIndex = null, triggerTitleGen = false) {
@@ -536,7 +647,13 @@
     sendBtn.disabled = true;
 
     const aiMessageContentBox = appendMessageElement("", 'ai', true);
-    aiMessageContentBox.classList.add('streaming-cursor');
+    aiMessageContentBox.innerHTML = `
+      <div class="thinking-loader">
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+      </div>
+    `;
 
     const targetedModel = document.getElementById('modelSelect').value;
     let textReceivedSoFar = "";
@@ -587,9 +704,13 @@
               const payload = JSON.parse(stripped.substring(6));
               const chunkToken = payload.choices[0]?.delta?.content || payload.choices[0]?.text || "";
               if (chunkToken) {
+                if (textReceivedSoFar === "") {
+                  aiMessageContentBox.innerHTML = "";
+                }
                 textReceivedSoFar += chunkToken;
                 aiMessageContentBox.innerHTML = marked.parse(textReceivedSoFar);
                 injectSandboxTriggersIfWebCodeDetected(aiMessageContentBox, textReceivedSoFar);
+                injectCodeDownloadButtons(aiMessageContentBox);
                 document.getElementById('chatViewport').scrollTop = document.getElementById('chatViewport').scrollHeight;
               }
             } catch(jsonErr) { }
@@ -597,8 +718,6 @@
         }
       }
 
-      aiMessageContentBox.classList.remove('streaming-cursor');
-      
       let savedMsgIndex;
       if (rewriteMessageIndex !== null) {
         session.messages[rewriteMessageIndex] = { role: 'assistant', sender: 'ai', content: textReceivedSoFar, rating: null };
@@ -612,6 +731,7 @@
       session.updatedAt = Date.now();
       
       appendEvaluationButtons(aiMessageContentBox.parentElement, savedMsgIndex);
+      injectCodeDownloadButtons(aiMessageContentBox);
       localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
 
       if (triggerTitleGen) {
@@ -625,7 +745,6 @@
       }, 400);
 
     } catch(networkErr) {
-      aiMessageContentBox.classList.remove('streaming-cursor');
       aiMessageContentBox.innerHTML = `<p style="color:#ff7a7a">Stream compilation aborted. Verify endpoint parameters inside settings dashboard panel.</p>`;
     } finally {
       sendBtn.disabled = false;
@@ -653,6 +772,7 @@
       content.innerHTML = isPlaceholder ? text : marked.parse(text);
       if (!isPlaceholder && index !== null) {
         injectSandboxTriggersIfWebCodeDetected(content, text);
+        injectCodeDownloadButtons(content);
         appendEvaluationButtons(row, index, existingRating);
       }
     }
@@ -677,6 +797,35 @@
         containerElement.appendChild(btn);
       }
     }
+  }
+
+  // Automation to append a download action token into raw code elements
+  function injectCodeDownloadButtons(containerElement) {
+    const codeBlocks = containerElement.querySelectorAll('pre');
+    codeBlocks.forEach(pre => {
+      const hasDownloadBtn = pre.querySelector('.download-code-btn');
+      if (!hasDownloadBtn) {
+        const btn = document.createElement('button');
+        btn.className = 'download-code-btn';
+        btn.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Download Source Code
+        `;
+        btn.onclick = () => {
+          const innerSnippetText = pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText;
+          const processingBlob = new Blob([innerSnippetText], { type: 'text/plain' });
+          const downloadableUrl = URL.createObjectURL(processingBlob);
+          const anchorTag = document.createElement('a');
+          anchorTag.href = downloadableUrl;
+          anchorTag.download = 'scribble-workspace-module.txt';
+          document.body.appendChild(anchorTag);
+          anchorTag.click();
+          document.body.removeChild(anchorTag);
+          URL.revokeObjectURL(downloadableUrl);
+        };
+        pre.appendChild(btn);
+      }
+    });
   }
 
   function launchWebSandbox(rawText) {
