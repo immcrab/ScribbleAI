@@ -121,6 +121,24 @@
   .download-code-btn:active {
     transform: translateY(0);
   }
+
+  /* Workspace Layout Modifier Overrides */
+  body.layout-wide .message-row { max-width: 100% !important; width: 100% !important; }
+  body.layout-wide .prompt-wrap { max-width: 96% !important; }
+  body.layout-wide .messages-viewport { max-width: 96% !important; margin: 0 auto; }
+  
+  body.layout-compact { font-size: 13px !important; }
+  body.layout-compact .message-row { padding: 10px 14px !important; gap: 10px !important; }
+  body.layout-compact .avatar { width: 26px !important; height: 26px !important; font-size: 11px !important; line-height: 26px !important; }
+  body.layout-compact .sidebar { width: 220px !important; }
+  body.layout-compact pre { padding: 10px !important; }
+  
+  body.layout-minimalist { background-color: #000000 !important; }
+  body.layout-minimalist .sidebar { background-color: #050505 !important; border-right: 1px solid #111111 !important; }
+  body.layout-minimalist nav { background-color: transparent !important; border-bottom: 1px solid #111111 !important; }
+  body.layout-minimalist .message-row.ai { background: transparent !important; border-bottom: 1px solid #121212 !important; }
+  body.layout-minimalist .prompt-inner { background: #070707 !important; border-color: #1a1a1a !important; }
+  body.layout-minimalist .main-stage { background-color: #000000 !important; }
 </style>
 </head>
 <body>
@@ -155,15 +173,35 @@
   
   <aside class="sidebar" id="appSidebar">
     <div class="sidebar-header">
-      <button class="new-chat-btn" onclick="createNewChat()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New Workspace
+      <button class="sidebar-logo-btn" onclick="closeSidebar()" aria-label="Close sidebar">
+        <img src="../assets/logo.png" alt="ScribbleAI logo" />
+        <div>
+          <strong>ScribbleAI</strong>
+          <small>Chat</small>
+        </div>
       </button>
+
+      <div class="sidebar-nav-actions">
+        <button class="sidebar-nav-item" onclick="createNewChat()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 20h4l12-12-4-4L4 16v4z"></path><path d="M14 6l4 4"></path></svg>
+          New chat
+        </button>
+        <button class="sidebar-nav-item" onclick="document.getElementById('chatSearchInput').focus()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+          Search chats
+        </button>
+      </div>
+
+      <div class="sidebar-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+        <input type="search" id="chatSearchInput" placeholder="Search chats" oninput="filterChatHistory()" />
+      </div>
     </div>
+    <div class="chat-history-title">Recents</div>
     <div class="chat-history-list" id="historyContainer"></div>
-    <div style="padding:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; gap:4px;">
-      <span id="userEmailBadge" style="font-size:13px; font-weight:600; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">User</span>
-      <span id="userSubBadge" style="font-size:11px; color:var(--muted); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;"></span>
+    <div class="sidebar-footer">
+      <span id="userEmailBadge">User</span>
+      <span id="userSubBadge"></span>
     </div>
   </aside>
 
@@ -171,10 +209,10 @@
     
     <nav>
       <div class="logo">
-        <button class="mobile-menu-btn pill-btn" onclick="toggleSidebar()" aria-label="Menu">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <button class="nav-logo-btn" onclick="openSidebar()" aria-label="Open sidebar">
+          <img src="../assets/logo.png" alt="ScribbleAI logo" />
         </button>
-        ScribbleAI <span class="serif">Chat</span>
+        <span class="app-title">ScribbleAI Chat</span>
       </div>
       <div class="nav-controls">
         <button class="pill-btn" onclick="toggleSettingsDrawer()">
@@ -197,12 +235,6 @@
           <div class="file-preview-tray" id="filePreviewTray"></div>
           <textarea id="userInput" placeholder="Build software parameters, ask explanations, run vectors…" rows="1"></textarea>
           <div class="prompt-tools">
-            <button class="chip pill-btn" onclick="document.getElementById('fileAttachmentInput').click()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-              Attach Local Asset
-            </button>
-            <input type="file" id="fileAttachmentInput" style="display: none;" accept="image/*,.js,.py,.html,.css,.json,.txt" onchange="handleFileAttachment(event)"/>
-            
             <button class="send-btn" id="sendBtn" onclick="sendMessage()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
@@ -230,7 +262,20 @@
       <button class="settings-action-btn btn-primary" onclick="updateWorkspaceUsername()">Save Username Profile</button>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 14px;">
+    <div style="border-bottom: 1px solid var(--border); padding-bottom: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <h4 style="font-size:13px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.05em;">Workspace Layout Style</h4>
+      <div class="settings-group">
+        <label>Layout Style Mode</label>
+        <select id="layoutSelect" class="settings-select" onchange="changeWorkspaceLayout(this.value)">
+          <option value="layout-default" selected>Default Layout</option>
+          <option value="layout-wide">Wide Canvas Layout</option>
+          <option value="layout-compact">Compact Studio Layout</option>
+          <option value="layout-minimalist">Stark Minimalist Layout</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 20px;">
       <h4 style="font-size:13px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.05em;">Model Routing Infrastructure</h4>
       
       <div class="settings-group">
@@ -324,6 +369,7 @@
     setTimeout(() => {
       const splash = document.getElementById('splashScreen');
       splash.style.opacity = '0';
+      document.body.classList.add('workspace-loaded');
       setTimeout(() => splash.style.display = 'none', 500);
       initializeAuthenticationProcedures();
     }, 1100);
@@ -333,14 +379,55 @@
   function toggleSidebar() {
     const sidebar = document.getElementById('appSidebar');
     const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('open');
     if (sidebar.classList.contains('open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  }
+
+  function openSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (!sidebar.classList.contains('open')) {
+      sidebar.classList.add('open');
       overlay.style.display = 'block';
       setTimeout(() => overlay.classList.add('show'), 10);
-    } else {
+    }
+  }
+
+  function closeSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar.classList.contains('open')) {
+      sidebar.classList.remove('open');
       overlay.classList.remove('show');
       setTimeout(() => overlay.style.display = 'none', 300);
     }
+  }
+
+  function filterChatHistory() {
+    const query = document.getElementById('chatSearchInput').value.toLowerCase().trim();
+    const container = document.getElementById('historyContainer');
+    const items = container.querySelectorAll('.history-item');
+
+    items.forEach(item => {
+      const chatId = item.dataset.id;
+      const title = item.dataset.title || item.querySelector('.history-item-text').innerText.toLowerCase();
+      item.dataset.title = title;
+      const session = chatSessions[chatId];
+      const textMatch = session.messages.some(msg => msg.content.toLowerCase().includes(query));
+      const visible = !query || title.includes(query) || textMatch;
+      item.style.display = visible ? 'flex' : 'none';
+    });
+  }
+
+  function changeWorkspaceLayout(layoutName) {
+    document.body.classList.remove('layout-wide', 'layout-compact', 'layout-minimalist');
+    if (layoutName !== 'layout-default') {
+      document.body.classList.add(layoutName);
+    }
+    localStorage.setItem('scribble_studio_layout', layoutName);
   }
 
   function initializeAuthenticationProcedures() {
@@ -453,6 +540,11 @@
       if (stored) chatSessions = JSON.parse(stored);
     } catch(e) { chatSessions = {}; }
 
+    const savedLayout = localStorage.getItem('scribble_studio_layout') || 'layout-default';
+    const layoutSelector = document.getElementById('layoutSelect');
+    if (layoutSelector) layoutSelector.value = savedLayout;
+    changeWorkspaceLayout(savedLayout);
+
     if (Object.keys(chatSessions).length === 0) {
       createNewChat();
     } else {
@@ -469,6 +561,7 @@
       messages: [], createdAt: Date.now(), updatedAt: Date.now()
     };
     switchSession(id);
+    renderSidebarItemsOnly();
   }
 
   function switchSession(id) {
@@ -506,6 +599,8 @@
     Object.keys(chatSessions).sort((a,b) => chatSessions[b].updatedAt - chatSessions[a].updatedAt).forEach(id => {
       const item = document.createElement('div');
       item.className = `history-item ${id === activeChatId ? 'active' : ''}`;
+      item.dataset.id = id;
+      item.dataset.title = chatSessions[id].title.toLowerCase();
       item.setAttribute('onclick', `switchSession('${id}')`);
       item.innerHTML = `
         <div class="history-item-text">${escapeHtml(chatSessions[id].title)}</div>
@@ -513,6 +608,7 @@
       `;
       container.appendChild(item);
     });
+    filterChatHistory();
   }
 
   function deleteSession(e, id) {
@@ -621,7 +717,7 @@
     `;
 
     // Simulate search thinking delay
-    await new Promise(resolve => setTimeout(resolve, 1400));
+    await new Promise(resolve => setTimeout(resolve, 2200));
 
     const alternativeLinkMsg = "A better way to create a website with Scribble is to go to the actual website generator! Please navigate to our standalone application at [../app](../app) to generate complete production layouts.";
     aiMessageContentBox.innerHTML = marked.parse(alternativeLinkMsg);
@@ -654,6 +750,9 @@
         <div class="thinking-dot"></div>
       </div>
     `;
+
+    // Intentional padding delay to optimize visual thinking animation states
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const targetedModel = document.getElementById('modelSelect').value;
     let textReceivedSoFar = "";
@@ -712,6 +811,9 @@
                 injectSandboxTriggersIfWebCodeDetected(aiMessageContentBox, textReceivedSoFar);
                 injectCodeDownloadButtons(aiMessageContentBox);
                 document.getElementById('chatViewport').scrollTop = document.getElementById('chatViewport').scrollHeight;
+                
+                // Fine pacing delay threshold to slow down visual output stream delivery
+                await new Promise(resolve => setTimeout(resolve, 25));
               }
             } catch(jsonErr) { }
           }
@@ -799,7 +901,7 @@
     }
   }
 
-  // Automation to append a download action token into raw code elements
+  // Automation to append a download action token into raw code elements with sequence-aware code block calculations
   function injectCodeDownloadButtons(containerElement) {
     const codeBlocks = containerElement.querySelectorAll('pre');
     codeBlocks.forEach(pre => {
@@ -813,11 +915,57 @@
         `;
         btn.onclick = () => {
           const innerSnippetText = pre.querySelector('code') ? pre.querySelector('code').innerText : pre.innerText;
+          
+          const allPreBlocksInTurn = Array.from(containerElement.querySelectorAll('pre'));
+          const coreRelativeIndex = allPreBlocksInTurn.indexOf(pre);
+          
+          let htmlCounter = 0;
+          let jsCounter = 0;
+          let cssCounter = 0;
+          let generalTextCounter = 0;
+          let assignedOutputFileName = 'scribble-workspace-module.txt';
+
+          for (let i = 0; i <= coreRelativeIndex; i++) {
+            const currentBlockText = allPreBlocksInTurn[i].querySelector('code') ? allPreBlocksInTurn[i].querySelector('code').innerText : allPreBlocksInTurn[i].innerText;
+            const contextTextCleaned = currentBlockText.trim();
+
+            if (contextTextCleaned.includes('<!DOCTYPE html>') || contextTextCleaned.includes('<html') || contextTextCleaned.includes('</html>')) {
+              htmlCounter++;
+              if (i === coreRelativeIndex) {
+                if (htmlCounter === 1) {
+                  assignedOutputFileName = 'index.html';
+                } else {
+                  const extractedHtmlTitle = contextTextCleaned.match(/<title>(.*?)<\/title>/i);
+                  if (extractedHtmlTitle && extractedHtmlTitle[1]) {
+                    assignedOutputFileName = extractedHtmlTitle[1].trim().toLowerCase().replace(/[^a-z0-9]/g, '-') + '.html';
+                  } else {
+                    assignedOutputFileName = `index_page_${htmlCounter}.html`;
+                  }
+                }
+              }
+            } else if (contextTextCleaned.includes('const ') || contextTextCleaned.includes('let ') || contextTextCleaned.includes('function ') || contextTextCleaned.includes('document.get')) {
+              jsCounter++;
+              if (i === coreRelativeIndex) {
+                assignedOutputFileName = jsCounter === 1 ? 'script.js' : `script_module_${jsCounter}.js`;
+              }
+            } else if (contextTextCleaned.includes('{') && (contextTextCleaned.includes('background:') || contextTextCleaned.includes('color:') || contextTextCleaned.includes('margin:'))) {
+              cssCounter++;
+              if (i === coreRelativeIndex) {
+                assignedOutputFileName = cssCounter === 1 ? 'style.css' : `theme_layout_${cssCounter}.css`;
+              }
+            } else {
+              generalTextCounter++;
+              if (i === coreRelativeIndex) {
+                assignedOutputFileName = generalTextCounter === 1 ? 'workspace-module.txt' : `workspace-module-${generalTextCounter}.txt`;
+              }
+            }
+          }
+
           const processingBlob = new Blob([innerSnippetText], { type: 'text/plain' });
           const downloadableUrl = URL.createObjectURL(processingBlob);
           const anchorTag = document.createElement('a');
           anchorTag.href = downloadableUrl;
-          anchorTag.download = 'scribble-workspace-module.txt';
+          anchorTag.download = assignedOutputFileName;
           document.body.appendChild(anchorTag);
           anchorTag.click();
           document.body.removeChild(anchorTag);
