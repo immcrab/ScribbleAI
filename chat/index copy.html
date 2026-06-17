@@ -11,7 +11,6 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="icon" type="image/png" href="../assets/logo.png" />
 <link rel="stylesheet" href="../assets/chat.css" />
-<link rel="stylesheet" href="premium-chat.css" />
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -32,202 +31,7 @@
 <meta property="twitter:description" content="Unlock advanced architectural generation workspaces and sandboxes with ScribbleAI." />
 <meta property="twitter:image" content="https://scribbleai.dev/assets/logo.png" />
 
-<style>
-  .feedback-modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.75); display: flex; align-items: center;
-    justify-content: center; z-index: 10000; opacity: 0; transition: opacity 0.3s ease;
-  }
-  .feedback-modal-card {
-    background: #161616; color: #fff; padding: 26px; border-radius: 12px;
-    width: 90%; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-    border: 1px solid #282828; font-family: 'Inter', sans-serif;
-  }
-  .feedback-modal-card h3 { margin-top: 0; font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
-  .feedback-modal-card p { color: #999; font-size: 13px; margin: 8px 0 18px 0; line-height: 1.5; }
-  .feedback-modal-card textarea {
-    width: 100%; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px;
-    color: #fff; padding: 12px; box-sizing: border-box; resize: none; font-family: inherit; margin-bottom: 16px; font-size: 14px;
-  }
-  .feedback-modal-card textarea:focus { outline: none; border-color: #555; }
-  .feedback-submit-btn {
-    background: #fff; color: #000; border: none; padding: 11px 20px;
-    border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; font-size: 13px;
-  }
-  .feedback-submit-btn:hover { background: #e5e5e5; }
-
-  /* Thinking Animation Loader Layout */
-  .thinking-loader {
-    display: inline-flex;
-    gap: 6px;
-    padding: 14px 18px;
-    background: #141414;
-    border: 1px solid #222;
-    border-radius: 12px;
-    align-items: center;
-    justify-content: center;
-    width: fit-content;
-    margin-top: 4px;
-    animation: fadeInLoader 0.3s ease-out forwards;
-  }
-  .thinking-dot {
-    width: 6px;
-    height: 6px;
-    background-color: #888;
-    border-radius: 50%;
-    animation: thinkingPulse 1.4s infinite ease-in-out both;
-  }
-  .thinking-dot:nth-child(1) { animation-delay: -0.32s; }
-  .thinking-dot:nth-child(2) { animation-delay: -0.16s; }
-  
-  @keyframes thinkingPulse {
-    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
-    40% { transform: scale(1.1); opacity: 1; background-color: #fff; }
-  }
-  @keyframes fadeInLoader {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* Universal Code Download Component Wrapper */
-  pre {
-    position: relative;
-    padding-bottom: 42px !important;
-  }
-  .download-code-btn {
-    position: absolute;
-    bottom: 10px;
-    right: 12px;
-    background: #1f1f1f;
-    border: 1px solid #333;
-    color: #eaeaea;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 10;
-  }
-  .download-code-btn:hover {
-    background: #ffffff;
-    color: #000000;
-    border-color: #ffffff;
-    transform: translateY(-1px);
-  }
-  .download-code-btn:active {
-    transform: translateY(0);
-  }
-
-  .skill-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-  .skill-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 600;
-    background: #111;
-    color: #c9c9c9;
-    border: 1px solid #232323;
-  }
-  .skill-chip.active {
-    background: #f5f5f5;
-    color: #0f0f0f;
-    border-color: #f5f5f5;
-  }
-  .skill-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.78);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 12000;
-  }
-  .skill-modal-card {
-    width: min(520px, 92vw);
-    background: #121212;
-    border: 1px solid #2b2b2b;
-    border-radius: 16px;
-    padding: 18px;
-    color: #fff;
-  }
-  .skill-modal-card h3 {
-    margin: 0 0 8px;
-    font-size: 18px;
-  }
-  .skill-modal-card p {
-    margin: 0 0 14px;
-    color: #999;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-  .skill-option-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .skill-option {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px;
-    background: #0d0d0d;
-    border: 1px solid #262626;
-    border-radius: 10px;
-    cursor: pointer;
-  }
-  .skill-option input { margin-top: 2px; }
-  .skill-option strong { display: block; font-size: 12px; }
-  .skill-option span { color: #9c9c9c; font-size: 11px; }
-  .skill-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-  .skill-modal-actions button {
-    border: 1px solid #333;
-    background: #181818;
-    color: #fff;
-    padding: 10px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .skill-modal-actions button.primary {
-    background: #fff;
-    color: #000;
-  }
-
-  /* Workspace Layout Modifier Overrides */
-  body.layout-wide .message-row { max-width: 100% !important; width: 100% !important; }
-  body.layout-wide .prompt-wrap { max-width: 96% !important; }
-  body.layout-wide .messages-viewport { max-width: 96% !important; margin: 0 auto; }
-  
-  body.layout-compact { font-size: 13px !important; }
-  body.layout-compact .message-row { padding: 10px 14px !important; gap: 10px !important; }
-  body.layout-compact .avatar { width: 26px !important; height: 26px !important; font-size: 11px !important; line-height: 26px !important; }
-  body.layout-compact .sidebar { width: 220px !important; }
-  body.layout-compact pre { padding: 10px !important; }
-  
-  body.layout-minimalist { background-color: #000000 !important; }
-  body.layout-minimalist .sidebar { background-color: #050505 !important; border-right: 1px solid #111111 !important; }
-  body.layout-minimalist nav { background-color: transparent !important; border-bottom: 1px solid #111111 !important; }
-  body.layout-minimalist .message-row.ai { background: transparent !important; border-bottom: 1px solid #121212 !important; }
-  body.layout-minimalist .prompt-inner { background: #070707 !important; border-color: #1a1a1a !important; }
-  body.layout-minimalist .main-stage { background-color: #000000 !important; }
-</style>
+<!-- Shared chat styles are defined in ../assets/chat.css -->
 </head>
 <body>
 
@@ -317,6 +121,9 @@
     <div class="workspace-surface">
       <section class="workspace-main-column">
         <div class="skill-chip-row" id="activeChatSkills"></div>
+        <div class="memory-insight-row">
+          <span class="memory-insight-pill" id="memoryInsightText">Memory ready</span>
+        </div>
         <div class="messages-viewport" id="chatViewport">
           <div class="welcome-hero" id="welcomeHero">
             <h1>ScribbleAI <span class="serif">Chat</span></h1>
@@ -333,13 +140,26 @@
                   <button class="tool-btn" title="Open skills" onclick="openSkillSelector()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5.1L20 9.5l-4 3.9.9 5.6L12 16.9 7.1 19l.9-5.6-4-3.9 5.5-.4L12 3z"></path></svg>
                   </button>
+                  <button class="tool-btn" title="Recall related chats" onclick="searchRelatedMemories()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
+                  </button>
                   <button class="tool-btn" title="Save prompt to memory" onclick="saveCurrentPromptToMemory()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"></path><path d="M8 9l4 4 4-4"></path><path d="M5 19h14"></path></svg>
+                  </button>
+                  <button class="tool-btn" title="Summarize this chat" onclick="summarizeCurrentChat()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14"></path><path d="M5 12h14"></path><path d="M5 17h9"></path></svg>
+                  </button>
+                  <button class="tool-btn" title="Generate a task plan" onclick="createTaskPlanFromPrompt()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M8 9h8M8 13h5"></path></svg>
+                  </button>
+                  <button class="tool-btn" title="Insert quick template" onclick="insertQuickTemplate()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>
                   </button>
                   <button class="tool-btn" title="Export chat" onclick="exportChatSession()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"></path><path d="M8 11l4 4 4-4"></path><path d="M5 19h14"></path></svg>
                   </button>
                 </div>
+                <div class="thinking-status" id="thinkingStatus" hidden></div>
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
