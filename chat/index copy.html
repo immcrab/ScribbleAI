@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="icon" type="image/png" href="../assets/logo.png" />
 <link rel="stylesheet" href="../assets/chat.css" />
+<link rel="stylesheet" href="premium-chat.css" />
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -122,6 +123,93 @@
     transform: translateY(0);
   }
 
+  .skill-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .skill-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #111;
+    color: #c9c9c9;
+    border: 1px solid #232323;
+  }
+  .skill-chip.active {
+    background: #f5f5f5;
+    color: #0f0f0f;
+    border-color: #f5f5f5;
+  }
+  .skill-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 12000;
+  }
+  .skill-modal-card {
+    width: min(520px, 92vw);
+    background: #121212;
+    border: 1px solid #2b2b2b;
+    border-radius: 16px;
+    padding: 18px;
+    color: #fff;
+  }
+  .skill-modal-card h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+  }
+  .skill-modal-card p {
+    margin: 0 0 14px;
+    color: #999;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .skill-option-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .skill-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    background: #0d0d0d;
+    border: 1px solid #262626;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .skill-option input { margin-top: 2px; }
+  .skill-option strong { display: block; font-size: 12px; }
+  .skill-option span { color: #9c9c9c; font-size: 11px; }
+  .skill-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .skill-modal-actions button {
+    border: 1px solid #333;
+    background: #181818;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .skill-modal-actions button.primary {
+    background: #fff;
+    color: #000;
+  }
+
   /* Workspace Layout Modifier Overrides */
   body.layout-wide .message-row { max-width: 100% !important; width: 100% !important; }
   body.layout-wide .prompt-wrap { max-width: 96% !important; }
@@ -156,7 +244,7 @@
       <input type="checkbox" id="legalGateCheck" onchange="toggleAuthBtnState()" />
       <label for="legalGateCheck">
         By checking this box, I explicitly verify that I read, understand, and agree to the ScribbleAI binding 
-        <a href="legal" target="_blank">Privacy Framework &amp; Terms of Service Architecture</a>.
+        <a href="../legal" target="_blank">Privacy Framework &amp; Terms of Service Architecture</a>.
       </label>
     </div>
 
@@ -215,6 +303,10 @@
         <span class="app-title">ScribbleAI Chat</span>
       </div>
       <div class="nav-controls">
+        <button class="pill-btn" onclick="toggleWorkspacePanel()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M9 3v18"></path></svg>
+          <span class="nav-settings-text">Workspace</span>
+        </button>
         <button class="pill-btn" onclick="toggleSettingsDrawer()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           <span class="nav-settings-text">Settings</span>
@@ -222,28 +314,65 @@
       </div>
     </nav>
 
-    <div class="messages-viewport" id="chatViewport">
-      <div class="welcome-hero" id="welcomeHero">
-        <h1>ScribbleAI <span class="serif">Chat</span></h1>
-        <p>A speed-optimized engineering interface hooked into sovereign model layers. Upload code strings or visual assets below.</p>
-      </div>
-    </div>
-
-    <div class="input-panel">
-      <div class="prompt-wrap">
-        <div class="prompt-inner">
-          <div class="file-preview-tray" id="filePreviewTray"></div>
-          <textarea id="userInput" placeholder="Build software parameters, ask explanations, run vectors…" rows="1"></textarea>
-          <div class="prompt-tools">
-            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </button>
+    <div class="workspace-surface">
+      <section class="workspace-main-column">
+        <div class="skill-chip-row" id="activeChatSkills"></div>
+        <div class="messages-viewport" id="chatViewport">
+          <div class="welcome-hero" id="welcomeHero">
+            <h1>ScribbleAI <span class="serif">Chat</span></h1>
+            <p>A speed-optimized engineering interface hooked into sovereign model layers. Upload code strings or visual assets below.</p>
           </div>
         </div>
-      </div>
-      <div class="legal-footer-disclaimer">
-        By using ScribbleAI Studio, you confirm adherence to the framework <a href="legal" target="_blank">Privacy &amp; Terms Architecture</a>.
-      </div>
+
+        <div class="input-panel">
+          <div class="prompt-wrap">
+            <div class="prompt-inner">
+              <textarea id="userInput" placeholder="Build software parameters, ask explanations, run vectors…" rows="1"></textarea>
+              <div class="prompt-tools">
+                <div class="prompt-toolbar">
+                  <button class="tool-btn" title="Open skills" onclick="openSkillSelector()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5.1L20 9.5l-4 3.9.9 5.6L12 16.9 7.1 19l.9-5.6-4-3.9 5.5-.4L12 3z"></path></svg>
+                  </button>
+                  <button class="tool-btn" title="Save prompt to memory" onclick="saveCurrentPromptToMemory()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"></path><path d="M8 9l4 4 4-4"></path><path d="M5 19h14"></path></svg>
+                  </button>
+                  <button class="tool-btn" title="Export chat" onclick="exportChatSession()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"></path><path d="M8 11l4 4 4-4"></path><path d="M5 19h14"></path></svg>
+                  </button>
+                </div>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="legal-footer-disclaimer">
+            By using ScribbleAI Studio, you confirm adherence to the framework <a href="../legal" target="_blank">Privacy &amp; Terms Architecture</a>.
+          </div>
+        </div>
+      </section>
+
+      <aside class="workspace-side-panel" id="workspaceSidePanel">
+        <div class="workspace-side-header">
+          <div>
+            <p class="workspace-kicker">Workspace</p>
+            <h3>Artifacts</h3>
+          </div>
+          <button onclick="toggleWorkspacePanel()">×</button>
+        </div>
+        <div class="workspace-panel-block">
+          <div class="workspace-panel-title">Branches</div>
+          <div id="branchList" class="branch-list"></div>
+        </div>
+        <div class="workspace-panel-block">
+          <div class="workspace-panel-title">Files</div>
+          <div id="fileListCard" class="file-list-card"></div>
+        </div>
+        <div class="workspace-panel-block">
+          <div class="workspace-panel-title">Memory</div>
+          <div id="memoryPreview" class="memory-preview">No memories saved yet.</div>
+        </div>
+      </aside>
     </div>
   </main>
 
@@ -272,6 +401,21 @@
           <option value="layout-compact">Compact Studio Layout</option>
           <option value="layout-minimalist">Stark Minimalist Layout</option>
         </select>
+      </div>
+    </div>
+
+    <div style="border-bottom: 1px solid var(--border); padding-bottom: 20px; display: flex; flex-direction: column; gap: 14px;">
+      <h4 style="font-size:13px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.05em;">Skill Routing</h4>
+      <div class="settings-group">
+        <label>Always Active Skills</label>
+        <div id="alwaysSkillSettings"></div>
+      </div>
+      <div class="settings-group">
+        <label>Add Custom Skill</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="customSkillInput" class="settings-input" placeholder="e.g. Research, UX Review" style="flex:1;">
+          <button class="settings-action-btn btn-primary" onclick="addCustomSkill()">Add</button>
+        </div>
       </div>
     </div>
 
@@ -317,6 +461,18 @@
   </div>
 </div>
 
+<div class="skill-modal-overlay" id="skillActivationModal">
+  <div class="skill-modal-card">
+    <h3>Activate skills for this prompt?</h3>
+    <p id="skillModalPromptText">We found a few strong directions that could improve the response.</p>
+    <div class="skill-option-grid" id="skillOptionGrid"></div>
+    <div class="skill-modal-actions">
+      <button onclick="dismissSkillActivation(false)">No thanks</button>
+      <button class="primary" onclick="dismissSkillActivation(true)">Use selected skills</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // INITIALIZE USER FIREBASE ACCOUNT CONTAINER PROTOCOLS
   const firebaseConfig = {
@@ -337,10 +493,303 @@
   // Core Global States
   let activeChatId = null;
   let chatSessions = {};
-  let currentlyAttachedFiles = [];
   let isLocalhostEnvironment = false;
   let workspaceUsername = "User";
   let hasBypassedGateLocally = false;
+  let pendingSkillPromptResolver = null;
+  let customSkillCatalog = [];
+  let alwaysActiveSkillIds = [];
+  let selectedBranchId = null;
+
+  const builtInSkillCatalog = [
+    { id: 'coding', label: 'Coding', desc: 'Best for debugging, refactoring, line-by-line help.' },
+    { id: 'writing', label: 'Writing', desc: 'Best for polished docs, emails, and content.' },
+    { id: 'scripting', label: 'Scripting', desc: 'Best for automation, CLI, and workflow tasks.' },
+    { id: 'research', label: 'Research', desc: 'Best for comparisons, planning, and analysis.' }
+  ];
+
+  function getStoredSkills() {
+    try {
+      return JSON.parse(localStorage.getItem('scribble_studio_custom_skills') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveStoredSkills() {
+    localStorage.setItem('scribble_studio_custom_skills', JSON.stringify(customSkillCatalog));
+  }
+
+  function loadSkillPreferences() {
+    customSkillCatalog = getStoredSkills();
+    const savedAlways = JSON.parse(localStorage.getItem('scribble_studio_always_active_skills') || '[]');
+    alwaysActiveSkillIds = Array.isArray(savedAlways) ? savedAlways : [];
+    renderSkillSettings();
+  }
+
+  function saveAlwaysSkills() {
+    localStorage.setItem('scribble_studio_always_active_skills', JSON.stringify(alwaysActiveSkillIds));
+  }
+
+  function getEffectiveSkillsForSession(session) {
+    const skillIds = new Set();
+    (session.skills || []).forEach(skill => skillIds.add(skill));
+    alwaysActiveSkillIds.forEach(skill => skillIds.add(skill));
+    return Array.from(skillIds);
+  }
+
+  function skillLabelFromId(skillId) {
+    const match = builtInSkillCatalog.find(skill => skill.id === skillId);
+    if (match) return match.label;
+    return skillId;
+  }
+
+  function renderSkillSettings() {
+    const alwaysContainer = document.getElementById('alwaysSkillSettings');
+    if (!alwaysContainer) return;
+
+    const allSkills = [...builtInSkillCatalog, ...customSkillCatalog.map(skill => ({ id: skill, label: skill, desc: 'Custom skill' }))];
+    alwaysContainer.innerHTML = '';
+    allSkills.forEach(skill => {
+      const row = document.createElement('label');
+      row.style.display = 'inline-flex';
+      row.style.alignItems = 'center';
+      row.style.gap = '6px';
+      row.style.marginRight = '8px';
+      row.style.fontSize = '12px';
+      row.style.color = '#ddd';
+      row.innerHTML = `
+        <input type="checkbox" onchange="toggleAlwaysSkill('${skill.id}', this.checked)" ${alwaysActiveSkillIds.includes(skill.id) ? 'checked' : ''}>
+        <span>${skill.label}</span>
+      `;
+      alwaysContainer.appendChild(row);
+    });
+  }
+
+  function toggleAlwaysSkill(skillId, isChecked) {
+    if (isChecked) {
+      if (!alwaysActiveSkillIds.includes(skillId)) alwaysActiveSkillIds.push(skillId);
+    } else {
+      alwaysActiveSkillIds = alwaysActiveSkillIds.filter(id => id !== skillId);
+    }
+    saveAlwaysSkills();
+    renderSkillSettings();
+  }
+
+  function addCustomSkill() {
+    const input = document.getElementById('customSkillInput');
+    if (!input) return;
+    const value = input.value.trim();
+    if (!value) return;
+    const skillId = value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (!skillId || customSkillCatalog.includes(skillId)) {
+      input.value = '';
+      return;
+    }
+    customSkillCatalog.push(skillId);
+    saveStoredSkills();
+    renderSkillSettings();
+    input.value = '';
+  }
+
+  function applySkillPromptToSession(skillIds) {
+    if (!activeChatId || !chatSessions[activeChatId]) return;
+    const session = chatSessions[activeChatId];
+    session.skills = Array.from(new Set([...(session.skills || []), ...skillIds]));
+    localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+    renderActiveChatSkills();
+  }
+
+  function renderActiveChatSkills() {
+    const session = activeChatId && chatSessions[activeChatId] ? chatSessions[activeChatId] : null;
+    const container = document.getElementById('activeChatSkills');
+    if (!container) return;
+    const chips = getEffectiveSkillsForSession(session || { skills: [] });
+    container.innerHTML = '';
+    chips.forEach(skillId => {
+      const chip = document.createElement('span');
+      chip.className = 'skill-chip active';
+      chip.textContent = skillLabelFromId(skillId);
+      container.appendChild(chip);
+    });
+  }
+
+  function renderWorkspaceMeta() {
+    const session = activeChatId && chatSessions[activeChatId] ? chatSessions[activeChatId] : null;
+    if (!session) return;
+    if (!Array.isArray(session.branches) || session.branches.length === 0) {
+      session.branches = [{ id: 'main', name: 'Main' }];
+    }
+    if (!session.selectedBranch) session.selectedBranch = session.branches[0].id;
+    selectedBranchId = session.selectedBranch;
+
+    const branchList = document.getElementById('branchList');
+    if (branchList) {
+      branchList.innerHTML = '';
+      session.branches.forEach(branch => {
+        const item = document.createElement('button');
+        item.className = 'workspace-branch-item';
+        item.type = 'button';
+        item.innerHTML = `${branch.name}${branch.id === selectedBranchId ? ' <span>(active)</span>' : ''}`;
+        item.onclick = () => {
+          session.selectedBranch = branch.id;
+          selectedBranchId = branch.id;
+          localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+          renderWorkspaceMeta();
+        };
+        branchList.appendChild(item);
+      });
+    }
+
+    const fileListCard = document.getElementById('fileListCard');
+    if (fileListCard) {
+      const detectedFiles = [];
+      session.messages.forEach(msg => {
+        const text = msg.content || '';
+        if (text.includes('<!DOCTYPE html>') || text.includes('</html>') || text.includes('<html')) detectedFiles.push('index.html');
+        if (text.includes('```css') || text.includes('background:') || text.includes('color:')) detectedFiles.push('styles.css');
+        if (text.includes('```js') || text.includes('const ') || text.includes('function ') || text.includes('document.')) detectedFiles.push('script.js');
+        if (text.includes('```python')) detectedFiles.push('app.py');
+        if (text.includes('```json')) detectedFiles.push('data.json');
+      });
+      const uniqueFiles = [...new Set(detectedFiles)].slice(0, 6);
+      fileListCard.innerHTML = uniqueFiles.length > 0
+        ? uniqueFiles.map(name => `<div>${name}</div>`).join('')
+        : '<div>No files detected yet.</div>';
+    }
+
+    const memoryPreview = document.getElementById('memoryPreview');
+    if (memoryPreview) {
+      const memories = Array.isArray(session.memories) && session.memories.length > 0
+        ? session.memories.map(m => `• ${m}`).join('<br>')
+        : 'No memories saved yet.';
+      memoryPreview.innerHTML = memories;
+    }
+  }
+
+  function openSkillSelector() {
+    const tx = document.getElementById('userInput');
+    const promptText = tx ? tx.value.trim() : '';
+    showSkillActivationModal(promptText || 'This conversation');
+  }
+
+  function saveCurrentPromptToMemory() {
+    const tx = document.getElementById('userInput');
+    const promptText = tx ? tx.value.trim() : '';
+    if (!promptText) return;
+    const session = activeChatId && chatSessions[activeChatId] ? chatSessions[activeChatId] : null;
+    if (!session) return;
+    if (!Array.isArray(session.memories)) session.memories = [];
+    if (!session.memories.includes(promptText)) {
+      session.memories.push(promptText);
+      session.updatedAt = Date.now();
+      localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+      renderWorkspaceMeta();
+    }
+  }
+
+  function exportChatSession() {
+    const session = activeChatId && chatSessions[activeChatId] ? chatSessions[activeChatId] : null;
+    if (!session) return;
+    const exportText = session.messages.map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}:\n${msg.content}`).join('\n\n');
+    const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(session.title || 'chat').replace(/[^a-z0-9]/gi, '_')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function computePromptComplexity(text) {
+    const normalized = text.toLowerCase();
+    let score = 0;
+    score += Math.min(0.35, text.length / 1200);
+    score += Math.min(0.2, (normalized.match(/\b(why|how|compare|design|build|debug|optimize|explain|create|analyze|plan|refactor|architecture|algorithm|code|script|api|database)\b/g) || []).length * 0.06);
+    score += Math.min(0.2, (normalized.match(/[?]/g) || []).length * 0.08);
+    score += Math.min(0.15, (normalized.match(/```|<html|<script|function |class |import |const |let |async |await /g) || []).length * 0.1);
+    score += Math.min(0.1, (text.split(/\s+/).length > 18 ? 0.1 : 0));
+    return Math.min(1, score);
+  }
+
+  function getThinkingDelay(promptText) {
+    const complexity = computePromptComplexity(promptText);
+    const base = 650;
+    const extra = Math.round(complexity * 1800);
+    return Math.min(3000, base + extra);
+  }
+
+  function getStreamPacing(promptText) {
+    const complexity = computePromptComplexity(promptText);
+    return Math.max(8, Math.round(35 - complexity * 18));
+  }
+
+  function detectSuggestedSkills(promptText) {
+    const normalized = promptText.toLowerCase();
+    const suggestions = [];
+    if (/(code|debug|bug|error|function|class|api|json|html|css|javascript|typescript|python|react|node|sql|java|c#|c\+\+|regex|refactor|optimi[sz]e|build|design)/i.test(normalized)) {
+      suggestions.push('coding');
+    }
+    if (/(write|email|letter|essay|blog|resume|summary|story|poem|proposal|documentation|docs)/i.test(normalized)) {
+      suggestions.push('writing');
+    }
+    if (/(script|automation|bash|shell|powershell|workflow|cron|api call|scrape|command)/i.test(normalized)) {
+      suggestions.push('scripting');
+    }
+    if (/(compare|research|analyze|plan|strategy|architecture|market|trend|pros|cons)/i.test(normalized)) {
+      suggestions.push('research');
+    }
+    return Array.from(new Set(suggestions));
+  }
+
+  function showSkillActivationModal(promptText) {
+    return new Promise(resolve => {
+      const modal = document.getElementById('skillActivationModal');
+      const promptLabel = document.getElementById('skillModalPromptText');
+      const grid = document.getElementById('skillOptionGrid');
+      if (!modal || !promptLabel || !grid) {
+        resolve([]);
+        return;
+      }
+      const suggested = detectSuggestedSkills(promptText);
+      promptLabel.textContent = suggested.length > 0
+        ? `We found ${suggested.map(skill => skillLabelFromId(skill)).join(', ')} as strong directions for this prompt.`
+        : 'We can still improve the response with a skill focus if you want.';
+      grid.innerHTML = '';
+      const catalog = [...builtInSkillCatalog, ...customSkillCatalog.map(skill => ({ id: skill, label: skill, desc: 'Custom skill' }))];
+      catalog.forEach(skill => {
+        const option = document.createElement('label');
+        option.className = 'skill-option';
+        option.innerHTML = `
+          <input type="checkbox" data-skill="${skill.id}" ${suggested.includes(skill.id) ? 'checked' : ''}>
+          <span>
+            <strong>${skill.label}</strong>
+            <span>${skill.desc}</span>
+          </span>
+        `;
+        grid.appendChild(option);
+      });
+      pendingSkillPromptResolver = resolve;
+      modal.style.display = 'flex';
+    });
+  }
+
+  function dismissSkillActivation(shouldApply) {
+    const modal = document.getElementById('skillActivationModal');
+    if (!modal) return;
+    const selected = [];
+    if (shouldApply) {
+      modal.querySelectorAll('input[data-skill]:checked').forEach(el => selected.push(el.dataset.skill));
+    }
+    modal.style.display = 'none';
+    if (pendingSkillPromptResolver) {
+      const resolve = pendingSkillPromptResolver;
+      pendingSkillPromptResolver = null;
+      resolve(selected);
+    }
+  }
 
   // Hard-locked Native Mistral Keys & Endpoint Routes
   const gatewayUrl = "https://api.mistral.ai/v1/chat/completions";
@@ -540,6 +989,8 @@
       if (stored) chatSessions = JSON.parse(stored);
     } catch(e) { chatSessions = {}; }
 
+    loadSkillPreferences();
+
     const savedLayout = localStorage.getItem('scribble_studio_layout') || 'layout-default';
     const layoutSelector = document.getElementById('layoutSelect');
     if (layoutSelector) layoutSelector.value = savedLayout;
@@ -558,7 +1009,10 @@
     const id = 'session_' + Date.now();
     chatSessions[id] = {
       id: id, title: "New Workspace Session",
-      messages: [], createdAt: Date.now(), updatedAt: Date.now()
+      messages: [], createdAt: Date.now(), updatedAt: Date.now(), skills: [],
+      branches: [{ id: 'main', name: 'Main' }],
+      selectedBranch: 'main',
+      memories: []
     };
     switchSession(id);
     renderSidebarItemsOnly();
@@ -572,6 +1026,7 @@
     viewport.innerHTML = '';
     
     const session = chatSessions[id];
+    if (!session.skills) session.skills = [];
     if (session.messages.length === 0) {
       viewport.innerHTML = `
         <div class="welcome-hero" id="welcomeHero">
@@ -584,6 +1039,8 @@
       });
     }
     renderSidebarItemsOnly();
+    renderActiveChatSkills();
+    renderWorkspaceMeta();
 
     if (window.innerWidth <= 768) {
       const sidebar = document.getElementById('appSidebar');
@@ -667,12 +1124,6 @@
     if (hero) hero.remove();
 
     let compiledPayload = promptText;
-    const hasFilesAttached = currentlyAttachedFiles.length > 0;
-    
-    if (hasFilesAttached) {
-      const namesStr = currentlyAttachedFiles.map(f => f.name).join(', ');
-      compiledPayload += `\n\n[User Attachment Log: User uploaded local system file contexts (${namesStr}). Process accordingly.]`;
-    }
 
     let session = chatSessions[activeChatId];
     const isFirstTurn = session.messages.length === 0;
@@ -688,8 +1139,6 @@
     renderSidebarItemsOnly();
 
     tx.value = ''; tx.style.height = 'auto';
-    document.getElementById('filePreviewTray').innerHTML = '';
-    currentlyAttachedFiles = [];
 
     // Intercept checking for website creation phrases
     const websiteKeywords = [/make a website/i, /create a website/i, /build a website/i, /generate a website/i, /design a website/i];
@@ -751,8 +1200,15 @@
       </div>
     `;
 
-    // Intentional padding delay to optimize visual thinking animation states
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const lastUserPrompt = session.messages.slice().reverse().find(m => m.role === 'user')?.content || '';
+    const thinkingDelay = getThinkingDelay(lastUserPrompt);
+    const streamPacing = getStreamPacing(lastUserPrompt);
+    const promptSkills = getEffectiveSkillsForSession(session);
+    const skillInstruction = promptSkills.length > 0
+      ? `\n\nActive skills for this chat: ${promptSkills.map(skill => skillLabelFromId(skill)).join(', ')}. Use them to tailor your response.`
+      : '';
+
+    await new Promise(resolve => setTimeout(resolve, thinkingDelay));
 
     const targetedModel = document.getElementById('modelSelect').value;
     let textReceivedSoFar = "";
@@ -766,6 +1222,9 @@
       }
 
       const formattedHistory = contextMessages.map(m => ({ role: m.role, content: m.content }));
+      if (skillInstruction) {
+        formattedHistory.unshift({ role: 'system', content: `You are a helpful assistant. ${skillInstruction}` });
+      }
 
       const response = await fetch(gatewayUrl, {
         method: 'POST',
@@ -812,8 +1271,7 @@
                 injectCodeDownloadButtons(aiMessageContentBox);
                 document.getElementById('chatViewport').scrollTop = document.getElementById('chatViewport').scrollHeight;
                 
-                // Fine pacing delay threshold to slow down visual output stream delivery
-                await new Promise(resolve => setTimeout(resolve, 25));
+                await new Promise(resolve => setTimeout(resolve, streamPacing));
               }
             } catch(jsonErr) { }
           }
@@ -876,6 +1334,7 @@
         injectSandboxTriggersIfWebCodeDetected(content, text);
         injectCodeDownloadButtons(content);
         appendEvaluationButtons(row, index, existingRating);
+        addMessageActions(row, index);
       }
     }
 
@@ -1133,6 +1592,59 @@
 
   function toggleSettingsDrawer() {
     document.getElementById('settingsDrawer').classList.toggle('open');
+  }
+
+  function toggleWorkspacePanel() {
+    document.getElementById('workspaceSidePanel').classList.toggle('open');
+  }
+
+  function addMessageActions(container, messageIdx) {
+    const actions = document.createElement('div');
+    actions.className = 'message-actions';
+    actions.innerHTML = `
+      <button onclick="copyMessage(${messageIdx})">Copy</button>
+      <button onclick="editMessage(${messageIdx})">Edit</button>
+      <button onclick="deleteMessage(${messageIdx})">Delete</button>
+      <button onclick="regenerateAiTurnAction('${activeChatId}', ${messageIdx})">Regenerate</button>
+      <button onclick="pinMessage(${messageIdx})">Pin</button>
+    `;
+    container.appendChild(actions);
+  }
+
+  function copyMessage(idx) {
+    const session = chatSessions[activeChatId];
+    const text = session?.messages[idx]?.content || '';
+    navigator.clipboard?.writeText(text);
+  }
+
+  function editMessage(idx) {
+    const session = chatSessions[activeChatId];
+    if (!session || !session.messages[idx]) return;
+    const text = prompt('Edit message', session.messages[idx].content || '');
+    if (text !== null) {
+      session.messages[idx].content = text;
+      session.updatedAt = Date.now();
+      switchSession(activeChatId);
+      localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+    }
+  }
+
+  function deleteMessage(idx) {
+    const session = chatSessions[activeChatId];
+    if (!session || !session.messages[idx]) return;
+    session.messages.splice(idx, 1);
+    session.updatedAt = Date.now();
+    switchSession(activeChatId);
+    localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+  }
+
+  function pinMessage(idx) {
+    const session = chatSessions[activeChatId];
+    if (!session || !session.messages[idx]) return;
+    const current = session.messages[idx];
+    current.pinned = !current.pinned;
+    localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+    switchSession(activeChatId);
   }
 
   function openFeedbackModal(isVoluntary = false) {
