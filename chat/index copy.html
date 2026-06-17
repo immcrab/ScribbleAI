@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="icon" type="image/png" href="../assets/logo.png" />
 <link rel="stylesheet" href="../assets/chat.css" />
+<link rel="stylesheet" href="premium-chat.css" />
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -31,7 +32,248 @@
 <meta property="twitter:description" content="Unlock advanced architectural generation workspaces and sandboxes with ScribbleAI." />
 <meta property="twitter:image" content="https://scribbleai.dev/assets/logo.png" />
 
-<!-- Shared chat styles are defined in ../assets/chat.css -->
+<style>
+  .feedback-modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75); display: flex; align-items: center;
+    justify-content: center; z-index: 10000; opacity: 0; transition: opacity 0.3s ease;
+  }
+  .feedback-modal-card {
+    background: #161616; color: #fff; padding: 26px; border-radius: 12px;
+    width: 90%; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    border: 1px solid #282828; font-family: 'Inter', sans-serif;
+  }
+  .feedback-modal-card h3 { margin-top: 0; font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+  .feedback-modal-card p { color: #999; font-size: 13px; margin: 8px 0 18px 0; line-height: 1.5; }
+  .feedback-modal-card textarea {
+    width: 100%; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px;
+    color: #fff; padding: 12px; box-sizing: border-box; resize: none; font-family: inherit; margin-bottom: 16px; font-size: 14px;
+  }
+  .feedback-modal-card textarea:focus { outline: none; border-color: #555; }
+  .feedback-submit-btn {
+    background: #fff; color: #000; border: none; padding: 11px 20px;
+    border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s; font-size: 13px;
+  }
+  .feedback-submit-btn:hover { background: #e5e5e5; }
+
+  /* Thinking Animation Loader Layout */
+  .thinking-loader {
+    display: inline-flex;
+    gap: 6px;
+    padding: 14px 18px;
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 12px;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    margin-top: 4px;
+    animation: fadeInLoader 0.3s ease-out forwards;
+  }
+  .thinking-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #888;
+    border-radius: 50%;
+    animation: thinkingPulse 1.4s infinite ease-in-out both;
+  }
+  .thinking-dot:nth-child(1) { animation-delay: -0.32s; }
+  .thinking-dot:nth-child(2) { animation-delay: -0.16s; }
+  
+  @keyframes thinkingPulse {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+    40% { transform: scale(1.1); opacity: 1; background-color: #fff; }
+  }
+  @keyframes fadeInLoader {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Universal Code Download Component Wrapper */
+  pre {
+    position: relative;
+    padding-bottom: 42px !important;
+  }
+  .download-code-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    background: #1f1f1f;
+    border: 1px solid #333;
+    color: #eaeaea;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10;
+  }
+  .download-code-btn:hover {
+    background: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+    transform: translateY(-1px);
+  }
+  .download-code-btn:active {
+    transform: translateY(0);
+  }
+
+  .skill-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .skill-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #111;
+    color: #c9c9c9;
+    border: 1px solid #232323;
+  }
+  .skill-chip.active {
+    background: #f5f5f5;
+    color: #0f0f0f;
+    border-color: #f5f5f5;
+  }
+  .skill-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 12000;
+  }
+  .skill-modal-card {
+    width: min(520px, 92vw);
+    background: #121212;
+    border: 1px solid #2b2b2b;
+    border-radius: 16px;
+    padding: 18px;
+    color: #fff;
+  }
+  .skill-modal-card h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+  }
+  .skill-modal-card p {
+    margin: 0 0 14px;
+    color: #999;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .skill-option-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .skill-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    background: #0d0d0d;
+    border: 1px solid #262626;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .skill-option input { margin-top: 2px; }
+  .skill-option strong { display: block; font-size: 12px; }
+  .skill-option span { color: #9c9c9c; font-size: 11px; }
+  .skill-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .skill-modal-actions button {
+    border: 1px solid #333;
+    background: #181818;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .skill-modal-actions button.primary {
+    background: #fff;
+    color: #000;
+  }
+
+  /* Workspace Layout Modifier Overrides */
+  body.layout-wide .message-row { max-width: 100% !important; width: 100% !important; }
+  body.layout-wide .prompt-wrap { max-width: 96% !important; }
+  body.layout-wide .messages-viewport { max-width: 96% !important; margin: 0 auto; }
+  
+  body.layout-compact { font-size: 13px !important; }
+  body.layout-compact .message-row { padding: 10px 14px !important; gap: 10px !important; }
+  body.layout-compact .avatar { width: 26px !important; height: 26px !important; font-size: 11px !important; line-height: 26px !important; }
+  body.layout-compact .sidebar { width: 220px !important; }
+  body.layout-compact pre { padding: 10px !important; }
+  
+  body.layout-minimalist { background-color: #000000 !important; }
+  body.layout-minimalist .sidebar { background-color: #050505 !important; border-right: 1px solid #111111 !important; }
+  body.layout-minimalist nav { background-color: transparent !important; border-bottom: 1px solid #111111 !important; }
+  body.layout-minimalist .message-row.ai { background: transparent !important; border-bottom: 1px solid #121212 !important; }
+  body.layout-minimalist .prompt-inner { background: #070707 !important; border-color: #1a1a1a !important; }
+  body.layout-minimalist .main-stage { background-color: #000000 !important; }
+
+  /* Mobile Support Rules & Fluid Layout Architecture */
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 280px !important;
+      z-index: 100002;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sidebar.mobile-open {
+      transform: translateX(0);
+    }
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 100001;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .sidebar-overlay.mobile-open {
+      display: block;
+      opacity: 1;
+    }
+    .workspace-surface {
+      flex-direction: column;
+    }
+    .workspace-side-panel {
+      width: 100% !important;
+      border-left: none !important;
+      border-top: 1px solid var(--border) !important;
+      display: none;
+    }
+    .workspace-side-panel.open {
+      display: block !important;
+    }
+    .nav-settings-text {
+      display: none; /* Keeps top bar clean on small devices */
+    }
+  }
+</style>
 </head>
 <body>
 
@@ -121,9 +363,6 @@
     <div class="workspace-surface">
       <section class="workspace-main-column">
         <div class="skill-chip-row" id="activeChatSkills"></div>
-        <div class="memory-insight-row">
-          <span class="memory-insight-pill" id="memoryInsightText">Memory ready</span>
-        </div>
         <div class="messages-viewport" id="chatViewport">
           <div class="welcome-hero" id="welcomeHero">
             <h1>ScribbleAI <span class="serif">Chat</span></h1>
@@ -140,26 +379,16 @@
                   <button class="tool-btn" title="Open skills" onclick="openSkillSelector()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 5.1L20 9.5l-4 3.9.9 5.6L12 16.9 7.1 19l.9-5.6-4-3.9 5.5-.4L12 3z"></path></svg>
                   </button>
-                  <button class="tool-btn" title="Recall related chats" onclick="searchRelatedMemories()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg>
-                  </button>
-                  <button class="tool-btn" title="Save prompt to memory" onclick="saveCurrentPromptToMemory()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"></path><path d="M8 9l4 4 4-4"></path><path d="M5 19h14"></path></svg>
-                  </button>
-                  <button class="tool-btn" title="Summarize this chat" onclick="summarizeCurrentChat()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14"></path><path d="M5 12h14"></path><path d="M5 17h9"></path></svg>
-                  </button>
-                  <button class="tool-btn" title="Generate a task plan" onclick="createTaskPlanFromPrompt()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"></rect><path d="M8 9h8M8 13h5"></path></svg>
-                  </button>
-                  <button class="tool-btn" title="Insert quick template" onclick="insertQuickTemplate()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"></path><path d="M3 12h18"></path></svg>
-                  </button>
+                  <button class="tool-btn" title="Clear current chat" onclick="clearCurrentChat()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+</button>
+<button class="tool-btn" title="Copy last AI response" onclick="copyLastResponse()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+</button>
                   <button class="tool-btn" title="Export chat" onclick="exportChatSession()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"></path><path d="M8 11l4 4 4-4"></path><path d="M5 19h14"></path></svg>
                   </button>
                 </div>
-                <div class="thinking-status" id="thinkingStatus" hidden></div>
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </button>
@@ -189,9 +418,9 @@
           <div id="fileListCard" class="file-list-card"></div>
         </div>
         <div class="workspace-panel-block">
-          <div class="workspace-panel-title">Memory</div>
-          <div id="memoryPreview" class="memory-preview">No memories saved yet.</div>
-        </div>
+  <div class="workspace-panel-title">System Context</div>
+  <textarea id="systemPromptInput" placeholder="Enter custom system instructions..." style="width:100%; background:#0a0a0a; border:1px solid #2a2a2a; border-radius:6px; color:#fff; padding:8px; font-size:12px; resize:vertical; font-family:inherit;" rows="4" onchange="updateSystemPrompt()"></textarea>
+</div>
       </aside>
     </div>
   </main>
@@ -281,6 +510,13 @@
   </div>
 </div>
 
+<div id="siteNotificationPopup" style="position: fixed; top: 24px; right: 24px; background: #161616; border: 1px solid #2e2e2e; color: #fff; padding: 14px 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 12px; z-index: 100000; transform: translateY(-20px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; font-family: 'Inter', sans-serif; font-size: 13px;">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" id="notificationIconSuccess" style="display:none;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" id="notificationIconError" style="display:none;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" id="notificationIconInfo" style="display:inline;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+  <span id="siteNotificationMessage">Notification text</span>
+</div>
+
 <div class="skill-modal-overlay" id="skillActivationModal">
   <div class="skill-modal-card">
     <h3>Activate skills for this prompt?</h3>
@@ -289,6 +525,17 @@
     <div class="skill-modal-actions">
       <button onclick="dismissSkillActivation(false)">No thanks</button>
       <button class="primary" onclick="dismissSkillActivation(true)">Use selected skills</button>
+    </div>
+  </div>
+</div>
+
+<div id="customConfirmModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100001; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;">
+  <div style="background: #111; border: 1px solid #2a2a2a; padding: 24px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); font-family: 'Inter', sans-serif;">
+    <h3 style="margin-top: 0; color: #fff; font-size: 16px; font-weight: 600; margin-bottom: 8px;">Clear Chat History</h3>
+    <p style="color: #888; font-size: 13px; margin-bottom: 20px; line-height: 1.5;">Are you sure you want to permanently clear this chat's history? This action cannot be undone.</p>
+    <div style="display: flex; justify-content: flex-end; gap: 12px;">
+      <button id="cancelConfirmBtn" style="background: transparent; border: 1px solid #333; color: #aaa; padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background 0.2s;">Cancel</button>
+      <button id="confirmActionBtn" style="background: #ef4444; border: none; color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s;">Clear Chat</button>
     </div>
   </div>
 </div>
@@ -306,12 +553,60 @@
     measurementId: "G-BY119K5RS2"
   };
 
+  let notificationTimeout = null;
+  function showSiteNotification(message, type = 'info') {
+    const popup = document.getElementById('siteNotificationPopup');
+    const msgSpan = document.getElementById('siteNotificationMessage');
+    const iconSuccess = document.getElementById('notificationIconSuccess');
+    const iconError = document.getElementById('notificationIconError');
+    const iconInfo = document.getElementById('notificationIconInfo');
+    
+    if (!popup || !msgSpan) return;
+    
+    msgSpan.textContent = message;
+    iconSuccess.style.display = type === 'success' ? 'inline' : 'none';
+    iconError.style.display = type === 'error' ? 'inline' : 'none';
+    iconInfo.style.display = type === 'info' ? 'inline' : 'none';
+    
+    clearTimeout(notificationTimeout);
+    popup.style.transform = 'translateY(0)';
+    popup.style.opacity = '1';
+    
+    notificationTimeout = setTimeout(() => {
+      popup.style.transform = 'translateY(-20px)';
+      popup.style.opacity = '0';
+    }, 3500);
+  }
+
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.database();
 
   // Core Global States
   let activeChatId = null;
+  // Mobile Sidebar Action Controllers
+  function openSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar) sidebar.classList.add('mobile-open');
+    if (overlay) overlay.classList.add('mobile-open');
+  }
+
+  function closeSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (overlay) overlay.classList.remove('mobile-open');
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    if (sidebar && sidebar.classList.contains('mobile-open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  }
   let chatSessions = {};
   let isLocalhostEnvironment = false;
   let workspaceUsername = "User";
@@ -478,12 +773,9 @@
         : '<div>No files detected yet.</div>';
     }
 
-    const memoryPreview = document.getElementById('memoryPreview');
-    if (memoryPreview) {
-      const memories = Array.isArray(session.memories) && session.memories.length > 0
-        ? session.memories.map(m => `• ${m}`).join('<br>')
-        : 'No memories saved yet.';
-      memoryPreview.innerHTML = memories;
+    const sysPromptInput = document.getElementById('systemPromptInput');
+    if (sysPromptInput) {
+      sysPromptInput.value = session.systemPrompt || "";
     }
   }
 
@@ -491,21 +783,6 @@
     const tx = document.getElementById('userInput');
     const promptText = tx ? tx.value.trim() : '';
     showSkillActivationModal(promptText || 'This conversation');
-  }
-
-  function saveCurrentPromptToMemory() {
-    const tx = document.getElementById('userInput');
-    const promptText = tx ? tx.value.trim() : '';
-    if (!promptText) return;
-    const session = activeChatId && chatSessions[activeChatId] ? chatSessions[activeChatId] : null;
-    if (!session) return;
-    if (!Array.isArray(session.memories)) session.memories = [];
-    if (!session.memories.includes(promptText)) {
-      session.memories.push(promptText);
-      session.updatedAt = Date.now();
-      localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
-      renderWorkspaceMeta();
-    }
   }
 
   function exportChatSession() {
@@ -832,7 +1109,7 @@
       messages: [], createdAt: Date.now(), updatedAt: Date.now(), skills: [],
       branches: [{ id: 'main', name: 'Main' }],
       selectedBranch: 'main',
-      memories: []
+      systemPrompt: ""
     };
     switchSession(id);
     renderSidebarItemsOnly();
@@ -925,6 +1202,68 @@
     currentlyAttachedFiles = currentlyAttachedFiles.filter(f => f.id !== id);
     const element = document.getElementById(id);
     if (element) element.remove();
+  }
+
+  function clearCurrentChat() {
+    const session = chatSessions[activeChatId];
+    if (!session) return;
+
+    const modal = document.getElementById('customConfirmModal');
+    const cancelBtn = document.getElementById('cancelConfirmBtn');
+    const confirmBtn = document.getElementById('confirmActionBtn');
+    
+    if (!modal || !cancelBtn || !confirmBtn) return;
+
+    // Show Modal
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto';
+
+    // Handle Cancel
+    const closeModal = () => {
+      modal.style.opacity = '0';
+      modal.style.pointerEvents = 'none';
+      cleanup();
+    };
+
+    // Handle Confirm Action
+    const handleConfirm = () => {
+      session.messages = [];
+      session.updatedAt = Date.now();
+      localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+      switchSession(activeChatId);
+      showSiteNotification("Chat history cleared successfully.", "success");
+      closeModal();
+    };
+
+    const cleanup = () => {
+      cancelBtn.removeEventListener('click', closeModal);
+      confirmBtn.removeEventListener('click', handleConfirm);
+    };
+
+    // Listeners
+    cancelBtn.addEventListener('click', closeModal);
+    confirmBtn.addEventListener('click', handleConfirm);
+  }
+
+  function copyLastResponse() {
+    const session = chatSessions[activeChatId];
+    if (!session || session.messages.length === 0) return;
+    const lastAiMsg = session.messages.slice().reverse().find(m => m.role === 'assistant');
+    if (lastAiMsg) {
+      navigator.clipboard.writeText(lastAiMsg.content);
+      showSiteNotification("Last response copied to clipboard.", "success");
+    }
+  }
+
+  function updateSystemPrompt() {
+    const session = chatSessions[activeChatId];
+    if (!session) return;
+    const input = document.getElementById('systemPromptInput');
+    if (input) {
+      session.systemPrompt = input.value.trim();
+      session.updatedAt = Date.now();
+      localStorage.setItem('scribble_studio_sessions', JSON.stringify(chatSessions));
+    }
   }
 
   async function sendMessage() {
@@ -1042,9 +1381,11 @@
       }
 
       const formattedHistory = contextMessages.map(m => ({ role: m.role, content: m.content }));
+      let baseSystemContext = session.systemPrompt ? session.systemPrompt : "You are a helpful assistant.";
       if (skillInstruction) {
-        formattedHistory.unshift({ role: 'system', content: `You are a helpful assistant. ${skillInstruction}` });
+        baseSystemContext += ` ${skillInstruction}`;
       }
+      formattedHistory.unshift({ role: 'system', content: baseSystemContext });
 
       const response = await fetch(gatewayUrl, {
         method: 'POST',
@@ -1515,13 +1856,13 @@
     db.ref('msb_feedback').push(textFeedbackPayload)
       .then(() => {
         localStorage.setItem('scribble_studio_global_feedback_completed', 'true');
-        alert("Thank you! Your feedback has been successfully submitted.");
+        showSiteNotification("Thank you! Your feedback has been successfully submitted.", "success");
         closeFeedbackModal();
         document.getElementById('feedbackModalTextarea').value = '';
       })
       .catch(err => {
         console.error("Error submitting text feedback:", err);
-        alert("Could not sync feedback to server. Please try again.");
+        showSiteNotification("Could not sync feedback to server. Please try again.", "error");
       });
   }
 

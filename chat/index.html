@@ -272,6 +272,54 @@
     .nav-settings-text {
       display: none; /* Keeps top bar clean on small devices */
     }
+    
+    /* Enhanced Mobile Touch & Interaction Improvements */
+    .messages-viewport {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    
+    .prompt-inner textarea {
+      font-size: 16px !important; /* Prevents iOS zoom on focus */
+      -webkit-appearance: none;
+    }
+    
+    .tool-btn, .send-btn, .pill-btn {
+      min-height: 44px;
+      min-width: 44px;
+      touch-action: manipulation;
+    }
+    
+    .feedback-btn {
+      min-height: 36px;
+      padding: 6px 10px;
+      touch-action: manipulation;
+    }
+    
+    .history-item {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+    
+    /* Prevent zoom on double-tap */
+    * {
+      touch-action: manipulation;
+    }
+    
+    /* Better mobile scrolling */
+    .chat-history-list {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    
+    /* Mobile keyboard handling */
+    body.keyboard-open .input-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
   }
 </style>
 </head>
@@ -1871,18 +1919,91 @@
   }
 
   const tx = document.getElementById('userInput');
-  tx.addEventListener('input', function() {
-    this.style.height = 'auto'; this.style.height = (this.scrollHeight - 32) + 'px';
-  });
-  tx.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { 
-      if(window.innerWidth <= 768) {
-         // Mobile touch fallback
-      } else {
-         e.preventDefault(); sendMessage(); 
-      }
+  
+  // Mobile keyboard detection and handling
+  let isKeyboardOpen = false;
+  
+  tx.addEventListener('focus', function() {
+    if (window.innerWidth <= 768) {
+      isKeyboardOpen = true;
+      document.body.classList.add('keyboard-open');
+      // Scroll to input on mobile when keyboard opens
+      setTimeout(() => {
+        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
     }
   });
+  
+  tx.addEventListener('blur', function() {
+    if (window.innerWidth <= 768) {
+      isKeyboardOpen = false;
+      document.body.classList.remove('keyboard-open');
+    }
+  });
+  
+  // Auto-resize textarea
+  tx.addEventListener('input', function() {
+    this.style.height = 'auto'; 
+    this.style.height = (this.scrollHeight - 32) + 'px';
+  });
+  
+  // Enhanced Enter key handling for mobile
+  tx.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { 
+      e.preventDefault(); 
+      sendMessage();
+    }
+  });
+  
+  // Prevent viewport zoom on iOS when focusing inputs
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (viewportMeta) {
+      viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    }
+  }
+  
+  // Handle window resize for mobile keyboard
+  let lastHeight = window.innerHeight;
+  window.addEventListener('resize', function() {
+    const currentHeight = window.innerHeight;
+    if (window.innerWidth <= 768) {
+      // Keyboard likely opened if height decreased significantly
+      if (currentHeight < lastHeight - 150) {
+        document.body.classList.add('keyboard-open');
+      } 
+      // Keyboard likely closed if height increased significantly
+      else if (currentHeight > lastHeight + 150) {
+        document.body.classList.remove('keyboard-open');
+      }
+    }
+    lastHeight = currentHeight;
+  });
+  
+  // Smooth scrolling for chat viewport on mobile
+  const chatViewport = document.getElementById('chatViewport');
+  if (chatViewport && window.innerWidth <= 768) {
+    chatViewport.style.webkitOverflowScrolling = 'touch';
+    chatViewport.style.overscrollBehavior = 'contain';
+  }
+  
+  // Prevent pull-to-refresh on mobile when scrolling chat
+  let touchStartY = 0;
+  if (chatViewport) {
+    chatViewport.addEventListener('touchstart', function(e) {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    
+    chatViewport.addEventListener('touchmove', function(e) {
+      const touchY = e.touches[0].clientY;
+      const touchDelta = touchY - touchStartY;
+      
+      // Prevent pull-to-refresh when at top of scroll
+      if (this.scrollTop === 0 && touchDelta > 0) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
 </script>
 
 </body>
